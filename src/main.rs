@@ -19,12 +19,12 @@ impl FileEntity {
 }
 
 #[derive(Serialize, Deserialize)]
-struct RawFile {
+struct FileContent {
     name: String,
     content: Vec<u8>
 }
 
-impl RawFile {
+impl FileContent {
     pub fn new(name: String, content: Vec<u8>) -> Self {
         Self {
             name,
@@ -61,7 +61,7 @@ async fn list_files() -> (StatusCode, Json<Option<Vec<FileEntity>>>) {
 }
 
 /// Função responsável por tratar o upload de um arquivo do servidor
-async fn upload_file(Json(raw_file): Json<RawFile>) -> (StatusCode, Json<Option<FileEntity>>) {
+async fn upload_file(Json(raw_file): Json<FileContent>) -> (StatusCode, Json<Option<FileEntity>>) {
     let mut arquivo = File::create(format!("server/{}", raw_file.name)).unwrap();
     let result = match arquivo.write_all(&raw_file.content) {
         Ok(_) => (StatusCode::CREATED, Json(None)),
@@ -71,13 +71,13 @@ async fn upload_file(Json(raw_file): Json<RawFile>) -> (StatusCode, Json<Option<
 }
 
 /// Função responsável por tratar o download de um arquivo do servidor
-async fn download_file(Path(id): Path<i32>) -> (StatusCode, Json<Option<RawFile>>) {
+async fn download_file(Path(id): Path<i32>) -> (StatusCode, Json<Option<FileContent>>) {
     let files = get_files();
     for file in files {
         if file.id == id {
             let name = "server/".to_owned() + &file.name;
             let content = fs::read(name).unwrap();
-            let raw_file = RawFile::new(file.name, content);
+            let raw_file = FileContent::new(file.name, content);
             return (StatusCode::OK, Json(Some(raw_file)));
         }
     }
